@@ -53,7 +53,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
+    let isMounted = true;
+
     supabase.auth.getSession().then(({ data: { session: s } }) => {
+      if (!isMounted) return;
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
@@ -63,6 +66,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (!isMounted) return;
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
@@ -72,7 +76,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [fetchProfile]);
 
   const signUp = async (email: string, password: string, metadata?: Record<string, string>) => {
